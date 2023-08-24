@@ -1,0 +1,173 @@
+//? Obtener todos los pacientes alfabéticamente
+use("db_citas");
+db.usuario.find().sort({
+    usu_nombre: 1
+});
+
+//? Obtener todas las citas numericamente
+
+use("db_citas");
+db.cita.find().sort({
+    cit_codigo: 1
+});
+
+//? Obtener todos los médicos de una especialidad específica (por ejemplo, 'Cardiología')
+
+use("db_citas");
+db.medico.aggregate([
+    {
+        $lookup: {
+            from: "especialidad",
+            localField: "med_especialidad",
+            foreignField: "esp_id",
+            as: "especialidad_FK"
+        }
+    },
+    {
+        $unwind: "$especialidad_FK"
+    },
+    {
+        $match: {
+            "especialidad_FK.esp_nombre": "Cardiología"
+        }
+    },
+    {
+        $project: {
+            "_id": 0,
+            "matriculaMedica": "$med_nroMatriculaProsional",
+            "nombreMedico": "$med_nombreCompleto",
+            "consultorio": "$med_consultorio",
+            "especialidad": "$especialidad_FK.esp_nombre" 
+        }
+    }
+]);
+
+// ? Encontrar la próxima cita para un paciente específico (por ejemplo, el paciente con usu_id 1)
+
+use("db_citas");
+db.cita.aggregate([
+    {
+        $lookup: {
+            from: "usuario",
+            localField: "cit_datosUsuarios",
+            foreignField: "usu_id",
+            as: "usuario_FK"
+        }
+    },
+    {
+        $unwind: "$usuario_FK"
+    },
+    {
+        $match: {
+            "usuario_FK.usu_id":1
+        }
+    },
+    {
+        $project: {
+            "_id": 0,
+            "fecha": {
+                $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$cit_fecha"
+                }
+            },
+            "usuario": "$usuario_FK.usu_id" 
+        }
+    }
+])
+
+// ! Encontrar todos los pacientes que tienen citas con un médico específico (por ejemplo, el médico con med_nroMatriculaProsional 1)
+
+use("db_citas");
+db.cita.aggregate([
+    {
+        $lookup: {
+            from: "medico",
+            localField: "cit_medico",
+            foreignField: "med_nroMatriculaProsional",
+            as: "medico_FK"
+        }
+    },
+    {
+        $unwind: "$medico_FK"
+    },
+    {
+        $lookup: {
+            from: "usuario",
+            localField: "cit_datosUsuarios",
+            foreignField: "usu_id",
+            as: "usu_FK"
+        }
+    },
+    {
+        $unwind: "$usu_FK"
+    },
+    {
+        $project: {
+            "_id": 0,
+            "medico": "$cit_medico",
+            "datosMedico": "$medico_FK.med_nombreCompleto",
+            "codUsu":"$usu_FK.usu_id",
+            "nombre":"$usu_FK.usu_nombre",
+            "segundoNombre":"$usu_FK.usu_segdo_nombre",
+            "apellido":"$usu_FK.usu_primer_apellido_usur",
+            "segundoApellido":"$usu_FK.usu_segdo_apellido_usur",
+            "telefono":"$usu_FK.usu_telefono",
+            "email":"$usu_FK.usu_email",
+        }
+    }
+])
+
+//? Obtener las consultorías para un paciente específico (por ejemplo, paciente con usu_id 1)
+
+use("db_citas");
+db.cita.aggregate([
+    {
+        $match: {
+            "cit_datosUsuarios": 1
+        }
+    },
+    {
+        $lookup: {
+            from: "medico",
+            localField: "cit_medico",
+            foreignField: "med_nroMatriculaProsional",
+            as: "medico_FK"
+        }
+    },
+    {
+        $lookup: {
+            from: "consultorio",
+            localField: "medico_FK.med_consultorio",
+            foreignField: "cons_codigo",
+            as: "consultorio_info"
+        }
+    },
+    {
+        $unwind: "$medico_FK"
+    },
+    {
+        $unwind: "$consultorio_info"
+    },
+    {
+        $project: {
+            "_id": 0,
+            "codigoCita": "$cit_codigo",
+            "fechaCita": "$cit_fecha",
+            "estadoCita": "$cit_estado",
+            "nombreMedico": "$medico_FK.med_nombreCompleto",
+            "nombreConsultorio": "$consultorio_info.cons_nombre"
+        }
+    }
+]);
+
+// ? Encontrar todas las citas para un día específico (por ejemplo, '2023-07-12')
+
+use("db_citas");
+db.cita.find();
+
+use("db_citas");
+db.cita.find().sort({ cita_fecha: "2023-07-12"});
+
+
+

@@ -1,0 +1,129 @@
+use("db_citas2");
+db.createCollection("cliente",{
+    validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          additionalProperties: false,
+          required: ['cc', 'nombre', 'rol'],
+          properties: {
+            _id:{
+                bsonType: 'objectId',
+            },
+            cc:{
+                bsonType: "int",
+                description: "La cedula es obligatorio y tiene que se de tipo numerico"
+            },
+            nombre: { 
+                bsonType: 'string',
+                description: 'El nombre es obligatorio y solo resive letras' ,
+                pattern: "^[a-zA-Z ]+$"
+            },
+            rol: { 
+                bsonType: 'array',
+                description: "El rol es obligatorio",
+                items: {
+                    bsonType: "int",
+                }
+            },
+            permisos: { 
+                bsonType: 'object',
+                description: "Ingrese los permisos",
+                properties: {
+                    "/user": {
+                        bsonType: "array",
+                        items: {
+                            bsonType: "string",
+                            description: "Ingrese la version autorizada",
+                        }
+                    }
+                }
+            }
+          },
+        }
+    }
+});
+use("db_citas2");
+db.cliente.insertMany([
+    {
+        cc: 123456789,
+        nombre: "Marcos",
+        rol: [1],
+        permisos:{
+            "/user": ["1.0.0", "3.5.0"]
+        }
+    },
+    {
+        cc: 456789123,
+        nombre: "Jhon",
+        rol: [2],
+        permisos:{
+            "/user": ["1.0.0","1.0.1","1.1.0"]
+        }
+    }
+]);
+
+db.createCollection("rol",{
+    validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          additionalProperties: false,
+          required: ['id', 'nombre',],
+          properties: {
+            _id:{
+                bsonType: 'objectId',
+            },
+            id:{
+                bsonType: "int",
+                description: "La cedula es obligatorio y tiene que se de tipo numerico"
+            },
+            nombre: { 
+                bsonType: 'string',
+                description: '{"status": "402", "message": "El nombre_usuario es obligatorio y solo resive letras"}' ,
+                pattern: "^[a-zA-Z ]+$"
+            }
+          },
+        }
+    }
+});
+
+
+
+use("db_citas2");
+db.createCollection("autoincrement");
+db.autoincrement.insertOne(
+    { _id: "rolId", sequence_value: 0 },
+);
+
+
+
+use("db_citas2");
+function increment(coleccion) {
+    const sequenceDocument = db.autoincrement.findOneAndUpdate(
+        { _id: `${coleccion}Id` },
+        { $inc: { sequence_value: 1 } },
+        { returnDocument: "after" }
+    );
+    return sequenceDocument.sequence_value;
+}
+db.rol.insertMany([
+    {
+        id: Number(increment("rol")),
+        nombre: 'admin'
+    },
+    {
+        id: Number(increment("rol")),
+        nombre: 'usuario'
+    },
+]);
+
+
+// Permiso del enpoint 
+use("db_citas2");
+db.cliente.findOne(
+    {
+        _id: new ObjectId("64e5f380ef6f06f2c41473e2"),
+        'permisos./user': '1.0.0'
+    }
+);
+  
+
