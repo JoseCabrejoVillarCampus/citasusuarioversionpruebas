@@ -83,8 +83,8 @@ db.cita.aggregate([
     {
         $lookup: {
             from: "medico",
-            localField: "cit_medico",
-            foreignField: "med_nroMatriculaProsional",
+            localField: "med_nroMatriculaProsional",
+            foreignField: "cit_medico",
             as: "medico_FK"
         }
     },
@@ -94,8 +94,8 @@ db.cita.aggregate([
     {
         $lookup: {
             from: "usuario",
-            localField: "cit_datosUsuarios",
-            foreignField: "usu_id",
+            localField: "usu_id",
+            foreignField: "cit_datosUsuarios",
             as: "usu_FK"
         }
     },

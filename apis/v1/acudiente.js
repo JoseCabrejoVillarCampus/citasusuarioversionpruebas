@@ -13,6 +13,7 @@ export const getAcudienteById = async (req, res, next) => {
             },
             {
                 $project: {
+                    "_id":0,
                     "codigoAcudiente": "$acu_codigo",
                     "nombreAcudiente": "$acu_nombreCompleto",
                     "telefono": "$acu_telefono",
@@ -32,6 +33,7 @@ export const getAcudienteAll = (req, res, next)=>{
         let result = await acudiente.aggregate([
             {
                 $project: {
+                    "_id":0,
                     "codigoAcudiente": "$acu_codigo",
                     "nombreAcudiente": "$acu_nombreCompleto",
                     "telefono": "$acu_telefono",
@@ -39,9 +41,7 @@ export const getAcudienteAll = (req, res, next)=>{
                 }
             }
         ]).toArray();
-        resolve(result);
-        const data = await getAcudienteAll();
-        res.send(data);
+        res.send(result);
     }) 
 };
 export const postAcudiente = async(req, res)=>{
@@ -53,15 +53,27 @@ export const postAcudiente = async(req, res)=>{
         console.log(error);
         }
 };
-
-
-export const userV1 = (req, res, next) => {
-    if(!req.rateLimit) return;
-    console.log(req.user);
-    res.status(200).send('ok 1.0.0');
+export const putAcudiente = async (req, res)=>{
+    try{
+        const id = parseInt(req.params.id);
+        let result = await acudiente.updateOne(
+            { "acu_codigo": id},
+            { $set: req.body }
+        );
+        res.send(result)
+    } catch (error){
+        res.status(422).send(error)
+    }
+};
+export const delAcudiente = async (req, res)=>{
+    try{
+        const id = parseInt(req.params.id);
+        let result = await acudiente.deleteOne(
+            { "acu_codigo": id }
+        );
+        res.status(200).send(result)
+    } catch (error){
+        res.status(422).send(error)
+    }
 }
-export const userV11 = (req, res, next) => {
-    if(!req.rateLimit) return; 
-    console.log(req.user);
-    res.status(200).send('ok 1.1.1');
-}
+
