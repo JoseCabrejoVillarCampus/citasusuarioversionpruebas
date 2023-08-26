@@ -14,8 +14,7 @@ db.cita.find().sort({
 //? Obtener todos los médicos de una especialidad específica (por ejemplo, 'Cardiología')
 
 use("db_citas");
-db.medico.aggregate([
-    {
+db.medico.aggregate([{
         $lookup: {
             from: "especialidad",
             localField: "med_especialidad",
@@ -37,7 +36,7 @@ db.medico.aggregate([
             "matriculaMedica": "$med_nroMatriculaProsional",
             "nombreMedico": "$med_nombreCompleto",
             "consultorio": "$med_consultorio",
-            "especialidad": "$especialidad_FK.esp_nombre" 
+            "especialidad": "$especialidad_FK.esp_nombre"
         }
     }
 ]);
@@ -45,8 +44,7 @@ db.medico.aggregate([
 // ? Encontrar la próxima cita para un paciente específico (por ejemplo, el paciente con usu_id 1)
 
 use("db_citas");
-db.cita.aggregate([
-    {
+db.cita.aggregate([{
         $lookup: {
             from: "usuario",
             localField: "cit_datosUsuarios",
@@ -59,7 +57,7 @@ db.cita.aggregate([
     },
     {
         $match: {
-            "usuario_FK.usu_id":1
+            "usuario_FK.usu_id": 1
         }
     },
     {
@@ -71,60 +69,51 @@ db.cita.aggregate([
                     date: "$cit_fecha"
                 }
             },
-            "usuario": "$usuario_FK.usu_id" 
+            "usuario": "$usuario_FK.usu_id"
         }
     }
 ])
 
-// ! Encontrar todos los pacientes que tienen citas con un médico específico (por ejemplo, el médico con med_nroMatriculaProsional 1)
+// ? Encontrar todos los pacientes que tienen citas con un médico específico (por ejemplo, el médico con med_nroMatriculaProsional 1)
 
-use("db_citas");
+use("db_citas2");
 db.cita.aggregate([
     {
-        $lookup: {
-            from: "medico",
-            localField: "med_nroMatriculaProsional",
-            foreignField: "cit_medico",
-            as: "medico_FK"
+        $match: {
+            "cit_medico": 234567
         }
-    },
-    {
-        $unwind: "$medico_FK"
     },
     {
         $lookup: {
             from: "usuario",
-            localField: "usu_id",
-            foreignField: "cit_datosUsuarios",
-            as: "usu_FK"
+            localField: "cit_datosUsuarios",
+            foreignField: "usu_id",
+            as: "paciente"
         }
-    },
-    {
-        $unwind: "$usu_FK"
     },
     {
         $project: {
             "_id": 0,
-            "medico": "$cit_medico",
-            "datosMedico": "$medico_FK.med_nombreCompleto",
-            "codUsu":"$usu_FK.usu_id",
-            "nombre":"$usu_FK.usu_nombre",
-            "segundoNombre":"$usu_FK.usu_segdo_nombre",
-            "apellido":"$usu_FK.usu_primer_apellido_usur",
-            "segundoApellido":"$usu_FK.usu_segdo_apellido_usur",
-            "telefono":"$usu_FK.usu_telefono",
-            "email":"$usu_FK.usu_email",
+            "medico": medicoNroMatriculaProfesional,
+            "paciente": {
+                "nombre": "$paciente.usu_nombre",
+                "segundoNombre": "$paciente.usu_segdo_nombre",
+                "apellido": "$paciente.usu_primer_apellido_usur",
+                "segundoApellido": "$paciente.usu_segdo_apellido_usur",
+                "telefono": "$paciente.usu_telefono",
+                "email": "$paciente.usu_email"
+            }
         }
     }
-])
+]);
 
-//? Obtener las consultorías para un paciente específico (por ejemplo, paciente con usu_id 1)
+//? Obtener los consultorios para un paciente específico (por ejemplo, paciente con usu_id 1)
 
-use("db_citas");
+use("db_citas2");
 db.cita.aggregate([
     {
         $match: {
-            "cit_datosUsuarios": 1
+            "cit_datosUsuarios": 3
         }
     },
     {
@@ -132,42 +121,186 @@ db.cita.aggregate([
             from: "medico",
             localField: "cit_medico",
             foreignField: "med_nroMatriculaProsional",
-            as: "medico_FK"
+            as: "medico"
         }
+    },
+    {
+        $unwind: "$medico"
     },
     {
         $lookup: {
             from: "consultorio",
-            localField: "medico_FK.med_consultorio",
+            localField: "medico.med_consultorio",
             foreignField: "cons_codigo",
-            as: "consultorio_info"
+            as: "consultorio"
         }
     },
     {
-        $unwind: "$medico_FK"
+        $lookup: {
+            from: "usuario",
+            localField: "cit_datosUsuarios",
+            foreignField: "usu_id",
+            as: "usuario"
+        }
     },
     {
-        $unwind: "$consultorio_info"
-    },
-    {
-        $project: {
+        $project: 
+        {
             "_id": 0,
-            "codigoCita": "$cit_codigo",
-            "fechaCita": "$cit_fecha",
-            "estadoCita": "$cit_estado",
-            "nombreMedico": "$medico_FK.med_nombreCompleto",
-            "nombreConsultorio": "$consultorio_info.cons_nombre"
+            "consultorio":"$consultorio.cons_nombre",
+            "medico":"$medico.med_nombreCompleto",
+            "Usuario":{"Nombre":"$usuario.usu_nombre",
+            "Apellido":"$usuario.usu_primer_apellido_usur",
+            "Telefono":"$usuario.usu_telefono"
+            }
         }
     }
 ]);
 
-// ? Encontrar todas las citas para un día específico (por ejemplo, '2023-07-12')
+// ? Encontrar todas las citas para un día específico (por ejemplo, '2023-02-02')
 
-use("db_citas");
-db.cita.find();
+use("db_citas2");
+db.cita.aggregate([
+    {
+        $match:{"cit_fecha": new Date(2023,2,2)}
+    
+    }
+]);
 
-use("db_citas");
-db.cita.find().sort({ cita_fecha: "2023-07-12"});
+// ? Obtener los médicos y sus consultorios
+
+use("db_citas2");
+db.medico.aggregate([
+    {
+        $match:{"med_nroMatriculaProsional":123456},
+    },
+    {
+        $lookup: {
+            from: "consultorio",
+            localField: "med_consultorio",
+            foreignField: "cons_codigo",
+            as: "consultorio_FK"
+        }
+    },
+    {
+        $unwind: "$consultorio_FK"
+    },
+    {
+        $project: {
+            "_id":0,
+            "medico":"$med_nombreCompleto",
+            "consultorio":"$consultorio_FK.cons_nombre"
+        }
+    }
+]);
+
+// ? Obtener los consultorio donde se aplicó las citas de un paciente 
+
+use("db_citas2");
+db.cita.aggregate([
+    {
+        $match: {
+            cit_datosUsuarios: 1 // Cambia esto al usu_id del paciente que deseas consultar
+        }
+    },
+    {
+        $lookup: {
+            from: "medico",
+            localField: "cit_medico",
+            foreignField: "med_nroMatriculaProsional",
+            as: "medicoData"
+        }
+    },
+    {
+        $unwind: "$medicoData"
+    },
+    {
+        $lookup: {
+            from: "consultorio",
+            localField: "medicoData.med_consultorio",
+            foreignField: "cons_codigo",
+            as: "consultorioData"
+        }
+    },
+    {
+        $project: {
+            "_id": 0,
+            "consultorio": {
+                "codigo": "$consultorioData.cons_codigo",
+                "nombre": "$consultorioData.cons_nombre"
+            }
+        }
+    }
+]);
+
+// ? Obtener todas las citas realizadas por los pacientes de un genero si su estado de la cita fue atendidad 
+
+use("db_citas2");
+db.usuario.aggregate([
+    {
+      $match: { "usu_genero": 4 } // Cambia el valor del género según tu necesidad
+    },
+    {
+      $lookup: {
+        from: "cita",
+        localField: "usu_id",
+        foreignField: "cit_datosUsuarios",
+        as: "citas"
+      }
+    },
+    {
+      $unwind: "$citas"
+    },
+    {
+      $match: { "citas.cit_estado": 4 } // Cambia el valor del estado según tu necesidad (4 representa "Realizada")
+    },
+    {
+      $project: {
+        "_id": 0,
+        "codigoCita": "$citas.cit_codigo",
+        "fechaCita": "$citas.cit_fecha",
+        "estadoCita": "$citas.cit_estado"
+      }
+    }
+]);
+
+
+
+
+import { ObjectId } from 'mongodb';
+
+export const insertarPaciente = async (req, res, next) => {
+    try {
+        const pacienteData = req.body;
+        const esMenorEdad = calcularEdad(pacienteData.fechaNacimiento) < 18;
+
+        if (esMenorEdad) {
+            // Si es menor de edad, ingresar datos del acudiente
+            const acudienteData = req.body.acudiente;
+            const acudienteExistente = await db.collection('acudiente').findOne({ acu_nombreCompleto: acudienteData.acu_nombreCompleto });
+
+            if (!acudienteExistente) {
+                // Si el acudiente no existe, ingresarlo
+                const acudienteResult = await db.collection('acudiente').insertOne(acudienteData);
+                pacienteData.usu_acudiente = acudienteResult.insertedId;
+            } else {
+                pacienteData.usu_acudiente = acudienteExistente._id;
+            }
+        }
+
+        // Ingresar datos del paciente
+        const pacienteResult = await db.collection('usuario').insertOne(pacienteData);
+        res.status(201).json({ message: 'Paciente ingresado exitosamente', pacienteId: pacienteResult.insertedId });
+    } catch (error) {
+        next(error);
+    }
+};
+
+function calcularEdad(fechaNacimiento) {
+    // Implementa el cálculo de edad a partir de la fecha de nacimiento
+    // Devuelve la edad en años
+}
+
 
 
 
