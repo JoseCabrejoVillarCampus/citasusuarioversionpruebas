@@ -27,10 +27,11 @@ app.use("/patientCitMedicoEspecifico", Routes.appQuerys);
 app.use("/consultoriasPorCliente", Routes.appQuerys);
 app.use("/medicoPorEspecialidad", Routes.appQuerys);
 app.use("/citaDiaEspecifico", Routes.appQuerys);
-app.use("/citaMedicoEspecifico", Routes.appQuerys);
+app.use("/consultoriaMedico", Routes.appQuerys);
 app.use("/contarCitasMedicoDia", Routes.appQuerys);
 app.use("/consultorioAplicadasCitasPacientes", Routes.appQuerys);
 app.use("/citasAtendidasXgenero", Routes.appQuerys);
+app.use("/insertaPacienteEdad", Routes.appQuerys);
 
 let config = JSON.parse(process.env.MY_SERVER);
 console.log(config);

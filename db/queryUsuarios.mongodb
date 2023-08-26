@@ -95,17 +95,11 @@ db.createCollection("rol",{
         }
     }
 });
-
-
-
 use("db_citas2");
 db.createCollection("autoincrement");
 db.autoincrement.insertOne(
     { _id: "rolId", sequence_value: 0 },
 );
-
-
-
 use("db_citas2");
 function increment(coleccion) {
     const sequenceDocument = db.autoincrement.findOneAndUpdate(
@@ -125,8 +119,6 @@ db.rol.insertMany([
         nombre: 'usuario'
     },
 ]);
-
-
 // Permiso del enpoint 
 use("db_citas2");
 db.cliente.findOne(
